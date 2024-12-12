@@ -1,0 +1,1 @@
+{"wandb_api_key": null, "username": null, "Project_name": null, "Sweep_id": null, "save_path": "trained_weights_architecture_B/", "save_name": "best_weights", "warmup": 168, "forecast_horizon": 24, "steps": 200, "seed": 38, "validation_stride": 24, "save_path_output": ""}

@@ -1,0 +1,7 @@
+numpy==1.24.1
+pandas
+wandb==0.15.11
+torch
+scipy
+matplotlib
+npy-append-array
