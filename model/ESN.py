@@ -5,11 +5,7 @@ import torch.nn as nn
 import numpy as np
 import scipy
 import os
-import torch.multiprocessing as mp
-import threading
-from copy import deepcopy
 from .Metrics import index_agreement_torch, rmse_torch
-import io
 from npy_append_array import NpyAppendArray
 
 class ESN(nn.Module):
@@ -643,7 +639,8 @@ class DeepLiESNd:
                 self.layers[idl]["reservoirs"][idr] = LiESNd(**reservoir)
                 self.layers[idl]["dicts"][idr] = reservoir
                 self.internal_size += reservoir['reservoir_size']
-                self.input_map[idr] = range(self.layers[idl]["dicts"][idr]['input_dim'])
+                if idr not in self.input_map.keys():
+                    self.input_map[idr] = range(self.layers[idl]["dicts"][idr]['input_dim'])
 
         self.ridge = kwargs['ridge']
         self.device = kwargs["device"]
@@ -763,12 +760,11 @@ class DeepLiESNd:
         for element in batch:
             inp, out = element
             dt = torch.tensor(inp[1], dtype=self.dtype, device=self.device)
-            self.forward(torch.tensor(inp[0], dtype=self.dtype, device=self.device), dt)
+            self.forward(inp[0].clone().detach(), dt)
             out_value, predict, time_out = out
             for idx in range(self.output_dim):
                 if predict[idx]:
                     self.add_train_point(idx, torch.tensor([out_value[idx]], dtype=self.dtype, device=self.device))
-
         self.reset_internal_state()
 
     def reset_internal_state(self):
@@ -851,8 +847,9 @@ class DeepLiESNd:
                         broi[idx] = 0.0
 
             while dt_i > self.tc:
-                LiESN_prediction = self.forward(torch.tensor(broi, dtype=self.dtype, device=self.device),
+                LiESN_prediction = self.forward(broi.clone().detach(),
                                                 torch.tensor(1.0, dtype=self.dtype, device=self.device))
+
                 dt_i = dt_i - self.tc
                 for idx in range(self.input_dim):
                     if idx < len(LiESN_prediction):
@@ -861,10 +858,6 @@ class DeepLiESNd:
                         else:
                             broi[idx] = 0.0
 
-            for idx in range(self.input_dim):
-                if torch.isnan(broi):
-                    print('Vish')
-
             LiESN_prediction = self.forward(broi.clone().detach(), dt_i)
             output.append([LiESN_prediction.detach().clone(), dt.detach().clone(), inp[2]])
             out_value, predict, time = out
@@ -872,6 +865,9 @@ class DeepLiESNd:
             for idx in range(self.output_dim):
                 if predict[idx]:
                     prediction_gt_pairs[idx].append([LiESN_prediction[idx].detach().clone(), out_value[idx].clone().detach()])
+
+            if any(torch.isnan(LiESN_prediction)):
+                print('NAN DETECTED')
 
         list_pred = list()
         for pred in prediction_gt_pairs:

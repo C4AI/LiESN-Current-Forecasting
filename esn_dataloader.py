@@ -392,10 +392,11 @@ class BatchParser:
 
             # If there is a gap in a predicted time series, stop using the zero order hold, so the model can fill these
             # gaps with its own predictions
-            for idx, _ in enumerate(self.batch):
-                if self.predict[idx] and not np.isnan(self.inp_map[idx]):
-                    if self.current_time - self.last_time[idx] > 2*self.modes[idx]:
-                        self.inputs[0][self.inp_map[idx]] = torch.tensor(np.nan, device=self.device, dtype=self.dtype)
+            if self.bypass_zoh:
+                for idx, _ in enumerate(self.batch):
+                    if self.predict[idx] and not np.isnan(self.inp_map[idx]):
+                        if self.current_time - self.last_time[idx] > 2*self.modes[idx]:
+                            self.inputs[0][self.inp_map[idx]] = torch.tensor(np.nan, device=self.device, dtype=self.dtype)
 
             self.outputs[1] = np.zeros(len(self.predict))
 
