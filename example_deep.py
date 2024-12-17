@@ -20,6 +20,8 @@ if __name__ == "__main__":
     'device': torch.device('cuda'), 'dtype': torch.float32}
 
     # ESN parameters
+    # First layer reservoirs names should be the same of the time series description. This will be used to map the time
+    # series to the correct reservoirs
 
     dict_train = {"layers": {
         "Layer1": {"ADCP": {
